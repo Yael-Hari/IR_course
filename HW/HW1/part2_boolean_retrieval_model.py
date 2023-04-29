@@ -1,5 +1,6 @@
 import re
 import collections
+from copy import deepcopy
 from part1_inverted_index import InvertedIndex
 
 
@@ -13,7 +14,6 @@ class BooleanRetrieval:
     """
 
     def __init__(self):
-        # self.inverted_index = InvertedIndex()
         pass
 
     def boolean_retrival_model(self, inverted_index: InvertedIndex, boolean_query: str):
@@ -44,7 +44,12 @@ class BooleanRetrieval:
         not_list = boolean_query_dict['NOT']
         for not_word in not_list:
             postings_list = word_to_posting_list[not_word]
-            all_postings_lists.append(self.get_postings_list_complimentary(postings_list))
+            all_postings_lists.append(
+                self.get_postings_list_complimentary(
+                    postings_list=postings_list,
+                    internal_idx_to_original_idx=inverted_index.internal_idx_to_original_idx
+                )
+            )
 
         # set of docs that are relevant to the need presented by the query
         docs_for_query_postings_list = self.get_postings_lists_intersection(all_postings_lists)
@@ -95,12 +100,12 @@ class BooleanRetrieval:
                     operand = stack.pop()
                     boolean_query_dict['NOT'].append(operand)
 
-            if len(stack) == 1:
-                and_element = stack.pop()
-                boolean_query_dict['AND'].append(and_element)
+        if len(stack) == 1:
+            and_element = stack.pop()
+            boolean_query_dict['AND'].append(and_element)
 
-            elif len(stack) > 1:
-                raise Exception("this not suppose to happen!")
+        elif len(stack) > 1:
+            raise Exception("this not suppose to happen!")
 
         return boolean_query_dict
 
@@ -109,9 +114,33 @@ class BooleanRetrieval:
         return norm_text
 
     def get_postings_lists_intersection(self, list_of_postings_list: list):
-        # TODO
-        #  returns a posting list!
-        pass
+        #
+        # returns a posting list!
+        if len(list_of_postings_list) == 0:
+            raise Exception("this not suppose to happen! len(list_of_postings_list) == 0")
+        elif len(list_of_postings_list) == 1:
+            return list_of_postings_list[0]
+
+        intersection_postings_list = list_of_postings_list[0]
+
+        for postings_list1 in list_of_postings_list[1:]:
+            postings_list2 = deepcopy(intersection_postings_list)
+            intersection_postings_list = collections.deque()
+            i_1, i_2 = 0, 0
+            len_1, len_2 = len(postings_list1), len(postings_list2)
+
+            while i_1 < len_1 and i_2 < len_2:
+
+                if postings_list1[i_1] < postings_list2[i_2]:
+                    i_1 += 1
+                elif postings_list1[i_1] > postings_list2[i_2]:
+                    i_2 += 1
+                elif postings_list1[i_1] == postings_list2[i_2]:
+                    intersection_postings_list.append(postings_list1[i_1])
+                    i_1 += 1
+                    i_2 += 1
+
+        return intersection_postings_list
 
     def get_postings_lists_union(self, postings_list1, postings_list2) -> collections.deque:
         #
@@ -124,7 +153,7 @@ class BooleanRetrieval:
                 union_postings_list.append(postings_list1[i_1])
                 i_1 += 1
             elif postings_list1[i_1] > postings_list2[i_2]:
-                union_postings_list.append(postings_list1[i_2])
+                union_postings_list.append(postings_list2[i_2])
                 i_2 += 1
             elif postings_list1[i_1] == postings_list2[i_2]:
                 union_postings_list.append(postings_list1[i_1])
@@ -141,9 +170,18 @@ class BooleanRetrieval:
 
         return union_postings_list
 
-    def get_postings_list_complimentary(self, postings_list):
-        # TODO
-        pass
+    def get_postings_list_complimentary(self, postings_list, internal_idx_to_original_idx) -> collections.deque:
+        #
+        complimentary_postings_list = collections.deque()
+        vocab_size = len(internal_idx_to_original_idx)
+        for doc in range(1, vocab_size + 1):
+
+            if doc in postings_list:
+                pass
+            else:
+                complimentary_postings_list.append(doc)
+
+        return complimentary_postings_list
 
 
 if __name__ == '__main__':
