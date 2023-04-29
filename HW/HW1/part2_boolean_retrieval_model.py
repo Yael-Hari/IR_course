@@ -17,7 +17,6 @@ class BooleanRetrieval:
         pass
 
     def boolean_retrival_model(self, inverted_index: InvertedIndex, boolean_query: str):
-        boolean_query = self.normalize_text(boolean_query)
         boolean_query_dict = self.translate_reverse_polish_notation_to_dict(boolean_query)
 
         # retrieve a set of matching documents
@@ -71,6 +70,7 @@ class BooleanRetrieval:
         for element in boolean_query_list:
 
             if element not in ['AND', 'OR', 'NOT']:
+                element = self.normalize_text(element)
                 # element is a word
                 stack.append(element)
 
@@ -113,10 +113,33 @@ class BooleanRetrieval:
         #  returns a posting list!
         pass
 
-    def get_postings_lists_union(self, postings_list1, postings_list2):
-        # TODO
-        #  returns a posting list!
-        pass
+    def get_postings_lists_union(self, postings_list1, postings_list2) -> collections.deque:
+        #
+        union_postings_list = collections.deque()
+        i_1, i_2 = 0, 0
+        len_1, len_2 = len(postings_list1), len(postings_list2)
+
+        while i_1 < len_1 and i_2 < len_2:
+            if postings_list1[i_1] < postings_list2[i_2]:
+                union_postings_list.append(postings_list1[i_1])
+                i_1 += 1
+            elif postings_list1[i_1] > postings_list2[i_2]:
+                union_postings_list.append(postings_list1[i_2])
+                i_2 += 1
+            elif postings_list1[i_1] == postings_list2[i_2]:
+                union_postings_list.append(postings_list1[i_1])
+                i_1 += 1
+                i_2 += 1
+
+        while i_1 < len_1:
+            union_postings_list.append(postings_list1[i_1])
+            i_1 += 1
+
+        while i_2 < len_2:
+            union_postings_list.append(postings_list1[i_2])
+            i_2 += 1
+
+        return union_postings_list
 
     def get_postings_list_complimentary(self, postings_list):
         # TODO
